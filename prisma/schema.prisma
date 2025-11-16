@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL") // Prisma 7: нельзя в schema.prisma (берётся из prisma.config.ts)
+}
+
+model User {
+  id         String   @id @default(uuid())
+  telegramId BigInt   @unique
+  fullName   String
+  phone      String   @unique
+  role       String   @default("user")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Restaurant {
+  id        String   @id @default(uuid())
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  halls     Hall[]
+}
+
+model Hall {
+  id           String     @id @default(uuid())
+  name         String
+  restaurantId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  reservations Reservation[]
+}
+
+model Reservation {
+  id           String   @id @default(uuid())
+  hallId       String
+  status       String   @default("active")
+  cancelReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  hall         Hall     @relation(fields: [hallId], references: [id])
+}
