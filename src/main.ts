@@ -21,6 +21,7 @@ async function bootstrap() {
     .setTitle("Hanna API")
     .setDescription("API documentation")
     .setVersion("1.0.0")
+    .addBearerAuth()
     .build()
 
   const document = SwaggerModule.createDocument(app, swaggerConfig)
