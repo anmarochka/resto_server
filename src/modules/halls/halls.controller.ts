@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from "@nestjs/common"
+import { Controller, Get, ParseUUIDPipe, Query } from "@nestjs/common"
 import { ApiQuery, ApiTags } from "@nestjs/swagger"
 import { HallsService } from "./halls.service"
 
@@ -9,7 +9,10 @@ export class HallsController {
 
   @ApiQuery({ name: "restaurantId", required: true, type: String })
   @Get()
-  getByRestaurant(@Query("restaurantId") restaurantId: string) {
+  getByRestaurant(
+    @Query("restaurantId", new ParseUUIDPipe({ version: "4" }))
+    restaurantId: string
+  ) {
     return this.hallsService.getByRestaurant(restaurantId)
   }
 }

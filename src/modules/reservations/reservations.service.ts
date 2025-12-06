@@ -1,16 +1,24 @@
 import { Injectable } from "@nestjs/common"
 import { ReservationsRepository } from "./reservations.repository"
+import { CreateReservationDto } from "./dto/create-reservation.dto"
+import { AnalyticsGateway } from "../analytics/analytics.gateway"
 
 @Injectable()
 export class ReservationsService {
-  constructor(private readonly repo: ReservationsRepository) {}
+  constructor(
+    private readonly repo: ReservationsRepository,
+    private readonly analyticsGateway: AnalyticsGateway
+  ) {}
 
-  createReservation(data: any) {
-    // бизнес-логика будет тут
-    return this.repo.create(data)
+  async createReservation(dto: CreateReservationDto) {
+    const reservation = await this.repo.createActive(dto.hallId)
+    this.analyticsGateway.emitReservationCreated(reservation)
+    return reservation
   }
 
-  cancelReservation(id: string, reason: string) {
-    return this.repo.cancel(id, reason)
+  async cancelReservation(id: string, reason: string) {
+    const reservation = await this.repo.cancel(id, reason)
+    this.analyticsGateway.emitReservationCancelled(reservation)
+    return reservation
   }
 }
