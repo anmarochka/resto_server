@@ -1,5 +1,5 @@
 import { Controller, Get } from "@nestjs/common"
-import { ApiTags } from "@nestjs/swagger"
+import { ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger"
 import { AnalyticsService } from "./analytics.service"
 
 @ApiTags("Analytics")
@@ -7,6 +7,12 @@ import { AnalyticsService } from "./analytics.service"
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
+  @ApiOperation({ summary: "Get reservations summary counters" })
+  @ApiOkResponse({
+    schema: {
+      example: { totalReservations: 120, cancelled: 18, active: 102 },
+    },
+  })
   @Get("summary")
   summary() {
     return this.analyticsService.getSummary()

@@ -1,6 +1,6 @@
 // admin.controller.ts
 import { Controller, Get, Query, UseGuards } from "@nestjs/common"
-import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger"
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger"
 import { Roles } from "../../common/decorators/roles.decorator"
 import { ROLES } from "../../common/constants/roles.constants"
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard"
@@ -15,6 +15,7 @@ import { AdminService } from "./admin.service"
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
+  @ApiOperation({ summary: "Admin: list reservations (optionally filtered by status)" })
   @ApiQuery({ name: "status", required: false, enum: ["active", "canceled"] })
   @Get("reservations")
   getReservations(@Query("status") status?: "active" | "canceled") {

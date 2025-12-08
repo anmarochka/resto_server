@@ -9,7 +9,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common"
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger"
+import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger"
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard"
 import { ReservationsService } from "./reservations.service"
 import { CreateReservationDto } from "./dto/create-reservation.dto"
@@ -22,12 +22,13 @@ import { CancelReservationDto } from "./dto/cancel-reservation.dto"
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
-  // POST по умолчанию 201, оставляем явно для требований
+  @ApiOperation({ summary: "Create a reservation (1 active reservation per hall)" })
   @Post()
   create(@Body() dto: CreateReservationDto) {
     return this.reservationsService.createReservation(dto)
   }
 
+  @ApiOperation({ summary: "Cancel a reservation by id" })
   @HttpCode(HttpStatus.OK)
   @Patch(":id/cancel")
   cancel(
