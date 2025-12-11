@@ -1,56 +1,196 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL") // Prisma 7: нельзя в schema.prisma (берётся из prisma.config.ts)
 }
 
-model User {
-  id         String   @id @default(uuid())
-  telegramId BigInt   @unique
-  fullName   String
-  phone      String   @unique
-  role       String   @default("user")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model analytics_daily {
+  id                     String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id          String      @db.Uuid
+  date                   DateTime    @db.Date
+  total_reservations     Int         @default(0)
+  confirmed_reservations Int         @default(0)
+  pending_reservations   Int         @default(0)
+  cancelled_reservations Int         @default(0)
+  completed_reservations Int         @default(0)
+  total_guests           Int         @default(0)
+  peak_hour              Int         @default(0) @db.SmallInt
+  created_at             DateTime    @default(now()) @db.Timestamptz(6)
+  restaurants            restaurants @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([restaurant_id, date], map: "uq_analytics_daily_restaurant_date")
 }
 
-model Restaurant {
-  id        String   @id @default(uuid())
-  name      String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model analytics_hall_popularity {
+  id                 String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id      String      @db.Uuid
+  hall_id            String      @db.Uuid
+  period_from        DateTime    @db.Date
+  period_to          DateTime    @db.Date
+  reservations_count Int         @default(0)
+  guests_count       Int         @default(0)
+  halls              halls       @relation(fields: [hall_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurants        restaurants @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  halls     Hall[]
+  @@index([restaurant_id, hall_id], map: "idx_analytics_hall_restaurant")
 }
 
-model Hall {
-  id           String     @id @default(uuid())
-  name         String
-  restaurantId String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model analytics_hourly {
+  id                 String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id      String      @db.Uuid
+  date               DateTime    @db.Date
+  hour               Int         @db.SmallInt
+  reservations_count Int         @default(0)
+  guests_count       Int         @default(0)
+  restaurants        restaurants @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
-  reservations Reservation[]
+  @@unique([restaurant_id, date, hour], map: "uq_analytics_hourly_restaurant_date_hour")
 }
 
-model Reservation {
-  id           String   @id @default(uuid())
-  hallId       String
-  status       String   @default("active")
-  cancelReason String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model cuisines {
+  id          String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        String        @unique
+  restaurants restaurants[]
+}
 
-  hall         Hall     @relation(fields: [hallId], references: [id])
+model halls {
+  id                        String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id             String                      @db.Uuid
+  name                      String
+  color_code                String
+  sort_order                Int                         @default(0)
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  analytics_hall_popularity analytics_hall_popularity[]
+  restaurants               restaurants                 @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reservations              reservations[]
+  tables                    tables[]
+
+  @@index([restaurant_id], map: "idx_halls_restaurant")
+  @@index([restaurant_id, sort_order], map: "idx_halls_sort_order")
+}
+
+model reservation_status_history {
+  id                  String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  reservation_id      String                   @db.Uuid
+  from_status         reservation_status_enum?
+  to_status           reservation_status_enum
+  changed_by_admin_id String?                  @db.Uuid
+  changed_at          DateTime                 @default(now()) @db.Timestamptz(6)
+  users               users?                   @relation(fields: [changed_by_admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reservations        reservations             @relation(fields: [reservation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([changed_at(sort: Desc)], map: "idx_status_history_changed_at")
+  @@index([reservation_id], map: "idx_status_history_reservation")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reservations {
+  id                                            String                       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id                                 String                       @db.Uuid
+  hall_id                                       String                       @db.Uuid
+  table_id                                      String                       @db.Uuid
+  user_id                                       String?                      @db.Uuid
+  created_by_type                               created_by_type_enum
+  created_by_admin_id                           String?                      @db.Uuid
+  guest_name                                    String?
+  guest_phone                                   String?
+  date                                          DateTime                     @db.Date
+  time_from                                     DateTime                     @db.Time(6)
+  time_to                                       DateTime                     @db.Time(6)
+  guests_count                                  Int
+  status                                        reservation_status_enum      @default(pending)
+  cancel_reason                                 String?
+  created_at                                    DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                                    DateTime                     @default(now()) @db.Timestamptz(6)
+  reservation_status_history                    reservation_status_history[]
+  users_reservations_created_by_admin_idTousers users?                       @relation("reservations_created_by_admin_idTousers", fields: [created_by_admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  halls                                         halls                        @relation(fields: [hall_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurants                                   restaurants                  @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tables                                        tables                       @relation(fields: [table_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_reservations_user_idTousers             users?                       @relation("reservations_user_idTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([restaurant_id, date], map: "idx_reservations_restaurant_date")
+  @@index([status], map: "idx_reservations_status")
+  @@index([table_id, date, time_from, time_to], map: "idx_reservations_table_date_time")
+  @@index([user_id, date(sort: Desc)], map: "idx_reservations_user_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model restaurants {
+  id                        String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                      String
+  cuisine_id                String                      @db.Uuid
+  address                   String
+  rating_value              Decimal                     @default(0.0) @db.Decimal(2, 1)
+  rating_count              Int                         @default(0)
+  work_time_from            DateTime                    @db.Time(6)
+  work_time_to              DateTime                    @db.Time(6)
+  image_url                 String
+  is_active                 Boolean                     @default(true)
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  analytics_daily           analytics_daily[]
+  analytics_hall_popularity analytics_hall_popularity[]
+  analytics_hourly          analytics_hourly[]
+  halls                     halls[]
+  reservations              reservations[]
+  cuisines                  cuisines                    @relation(fields: [cuisine_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                     users[]
+
+  @@index([is_active], map: "idx_restaurants_active")
+  @@index([cuisine_id], map: "idx_restaurants_cuisine")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tables {
+  id             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  hall_id        String         @db.Uuid
+  table_number   Int
+  seats          Int
+  position_index Int            @default(0)
+  is_active      Boolean        @default(true)
+  created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  reservations   reservations[]
+  halls          halls          @relation(fields: [hall_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([hall_id, table_number], map: "uq_tables_hall_table_number")
+  @@index([hall_id, position_index], map: "idx_tables_hall_position")
+}
+
+model users {
+  id                                                   String                       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  telegram_id                                          BigInt?                      @unique
+  full_name                                            String
+  phone                                                String                       @unique
+  role                                                 user_role_enum
+  restaurant_id                                        String?                      @db.Uuid
+  created_at                                           DateTime                     @default(now()) @db.Timestamptz(6)
+  reservation_status_history                           reservation_status_history[]
+  reservations_reservations_created_by_admin_idTousers reservations[]               @relation("reservations_created_by_admin_idTousers")
+  reservations_reservations_user_idTousers             reservations[]               @relation("reservations_user_idTousers")
+  restaurants                                          restaurants?                 @relation(fields: [restaurant_id], references: [id], onUpdate: NoAction)
+
+  @@index([restaurant_id], map: "idx_users_restaurant")
+  @@index([role], map: "idx_users_role")
+}
+
+enum created_by_type_enum {
+  user
+  admin
+}
+
+enum reservation_status_enum {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+enum user_role_enum {
+  user
+  admin
 }

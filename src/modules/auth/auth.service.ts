@@ -26,40 +26,29 @@ export class AuthService {
     }
 
     const telegramId = BigInt(telegramUser.id)
-    const fullName = `${telegramUser.first_name ?? ""} ${telegramUser.last_name ?? ""}`.trim() || "Telegram User"
 
-    const existing = await this.prisma.user.findUnique({
-      where: { telegramId },
+    const existing = await this.prisma.users.findUnique({
+      where: { telegram_id: telegramId },
     })
 
-    const user =
-      existing ??
-      (await this.prisma.user.create({
-        data: {
-          telegramId,
-          fullName,
-          phone: `tg_${telegramUser.id}`, // временно, позже заменим на нормальный ввод телефона
-          role: ROLES.USER,
-        },
-      }))
+    if (!existing) {
+      throw new UnauthorizedException("User not registered")
+    }
 
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
-      role: user.role,
-      telegramId: user.telegramId?.toString(),
-    })
+    const payload = {
+      sub: existing.id,
+      role: existing.role ?? ROLES.USER,
+      telegramId: telegramUser.id,
+    }
 
     return {
-      accessToken,
-      user: {
-        id: user.id,
-        role: user.role,
-        fullName: user.fullName,
-      },
+      accessToken: await this.jwtService.signAsync(payload),
     }
   }
 
-  private verifyTelegramInitData(initData: string): { isValid: boolean; telegramUser: TelegramUser | null } {
+  private verifyTelegramInitData(
+    initData: string
+  ): { isValid: boolean; telegramUser: TelegramUser | null } {
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     if (!botToken) return { isValid: false, telegramUser: null }
 
@@ -73,7 +62,10 @@ export class AuthService {
       .join("\n")
 
     const secretKey = crypto.createHash("sha256").update(botToken).digest()
-    const computedHash = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
+    const computedHash = crypto
+      .createHmac("sha256", secretKey)
+      .update(dataCheckString)
+      .digest("hex")
 
     const userRaw = params.get("user")
     const telegramUser = userRaw ? (JSON.parse(userRaw) as TelegramUser) : null

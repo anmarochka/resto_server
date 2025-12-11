@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from "@nestjs/common"
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger"
@@ -22,10 +23,10 @@ import { CancelReservationDto } from "./dto/cancel-reservation.dto"
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
-  @ApiOperation({ summary: "Create a reservation (1 active reservation per hall)" })
+  @ApiOperation({ summary: "Create a reservation" })
   @Post()
-  create(@Body() dto: CreateReservationDto) {
-    return this.reservationsService.createReservation(dto)
+  create(@Body() dto: CreateReservationDto, @Req() req: any) {
+    return this.reservationsService.createReservation(dto, req.user.userId)
   }
 
   @ApiOperation({ summary: "Cancel a reservation by id" })

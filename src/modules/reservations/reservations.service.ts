@@ -10,8 +10,8 @@ export class ReservationsService {
     private readonly analyticsGateway: AnalyticsGateway
   ) {}
 
-  async createReservation(dto: CreateReservationDto) {
-    const reservation = await this.repo.createActive(dto.hallId)
+  async createReservation(dto: CreateReservationDto, userId: string) {
+    const reservation = await this.repo.create(dto, userId)
     this.analyticsGateway.emitReservationCreated(reservation)
     return reservation
   }

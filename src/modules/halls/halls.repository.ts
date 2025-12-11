@@ -7,6 +7,6 @@ export class HallsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   findByRestaurant(restaurantId: string) {
-    return this.prisma.hall.findMany({ where: { restaurantId } })
+    return this.prisma.halls.findMany({ where: { restaurant_id: restaurantId } })
   }
 }

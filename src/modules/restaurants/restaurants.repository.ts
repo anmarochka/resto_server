@@ -6,8 +6,8 @@ export class RestaurantsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
-    return this.prisma.restaurant.findMany({
-      where: { isActive: true },
+    return this.prisma.restaurants.findMany({
+      where: { is_active: true },
     })
   }
 }

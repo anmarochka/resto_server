@@ -7,9 +7,9 @@ export class AnalyticsService {
 
   async getSummary() {
     const [totalReservations, cancelled, active] = await Promise.all([
-      this.prisma.reservation.count(),
-      this.prisma.reservation.count({ where: { status: "canceled" } }),
-      this.prisma.reservation.count({ where: { status: "active" } }),
+      this.prisma.reservations.count(),
+      this.prisma.reservations.count({ where: { status: "cancelled" } }),
+      this.prisma.reservations.count({ where: { status: { in: ["pending", "confirmed"] } } }),
     ])
 
     return {

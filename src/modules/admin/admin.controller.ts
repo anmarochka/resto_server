@@ -16,9 +16,16 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @ApiOperation({ summary: "Admin: list reservations (optionally filtered by status)" })
-  @ApiQuery({ name: "status", required: false, enum: ["active", "canceled"] })
+  @ApiQuery({
+    name: "status",
+    required: false,
+    enum: ["pending", "confirmed", "cancelled", "completed"],
+  })
   @Get("reservations")
-  getReservations(@Query("status") status?: "active" | "canceled") {
+  getReservations(
+    @Query("status")
+    status?: "pending" | "confirmed" | "cancelled" | "completed",
+  ) {
     return this.adminService.getReservations({ status })
   }
 }
