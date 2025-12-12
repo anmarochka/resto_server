@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16.6
+    container_name: hanna-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-resto_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_password}
+      POSTGRES_DB: ${POSTGRES_DB:-resto}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hanna-api:0.0.1
+    container_name: hanna-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3000}
+      DATABASE_URL: ${DATABASE_URL}
+      PRISMA_ACCELERATE_URL: ${PRISMA_ACCELERATE_URL:-}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const http=require('http');http.get({host:'127.0.0.1',port:process.env.PORT||3000,path:'/health'},res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1));\""]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    # базовая изоляция (опционально)
+    tmpfs:
+      - /tmp
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
