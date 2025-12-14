@@ -1,6 +1,7 @@
-import { Controller, Get, ParseUUIDPipe, Query } from "@nestjs/common"
+import { Controller, Get, Query } from "@nestjs/common"
 import { ApiQuery, ApiTags } from "@nestjs/swagger"
 import { HallsService } from "./halls.service"
+import { ParseUuidLoosePipe } from "../../common/pipes/parse-uuid-loose.pipe"
 
 @ApiTags("Halls")
 @Controller("halls")
@@ -9,10 +10,7 @@ export class HallsController {
 
   @ApiQuery({ name: "restaurantId", required: true, type: String })
   @Get()
-  getByRestaurant(
-    @Query("restaurantId", new ParseUUIDPipe({ version: "4" }))
-    restaurantId: string
-  ) {
+  getByRestaurant(@Query("restaurantId", new ParseUuidLoosePipe()) restaurantId: string) {
     return this.hallsService.getByRestaurant(restaurantId)
   }
 }

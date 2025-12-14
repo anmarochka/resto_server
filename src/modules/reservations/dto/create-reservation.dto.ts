@@ -1,17 +1,20 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min, Matches } from "class-validator"
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min, Matches } from "class-validator"
+
+const UUID_LOOSE_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export class CreateReservationDto {
   @ApiProperty()
-  @IsUUID("4")
+  @Matches(UUID_LOOSE_REGEX)
   restaurantId: string
 
   @ApiProperty()
-  @IsUUID("4")
+  @Matches(UUID_LOOSE_REGEX)
   hallId: string
 
   @ApiProperty()
-  @IsUUID("4")
+  @Matches(UUID_LOOSE_REGEX)
   tableId: string
 
   @ApiProperty({ example: "2025-12-05" })

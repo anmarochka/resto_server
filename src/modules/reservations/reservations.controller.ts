@@ -4,7 +4,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Req,
@@ -15,6 +14,7 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard"
 import { ReservationsService } from "./reservations.service"
 import { CreateReservationDto } from "./dto/create-reservation.dto"
 import { CancelReservationDto } from "./dto/cancel-reservation.dto"
+import { ParseUuidLoosePipe } from "../../common/pipes/parse-uuid-loose.pipe"
 
 @ApiTags("Reservations")
 @ApiBearerAuth()
@@ -32,10 +32,7 @@ export class ReservationsController {
   @ApiOperation({ summary: "Cancel a reservation by id" })
   @HttpCode(HttpStatus.OK)
   @Patch(":id/cancel")
-  cancel(
-    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
-    @Body() dto: CancelReservationDto
-  ) {
+  cancel(@Param("id", new ParseUuidLoosePipe()) id: string, @Body() dto: CancelReservationDto) {
     return this.reservationsService.cancelReservation(id, dto.reason)
   }
 }
