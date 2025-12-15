@@ -8,16 +8,15 @@ import { ROLES } from "../../common/constants/roles.constants"
 describe("AuthService", () => {
   let service: AuthService
 
-  const prismaMock = {
-    user: {
+  const prismaMock: any = {
+    users: {
       findUnique: jest.fn(),
-      create: jest.fn(),
     },
-  } as unknown as PrismaService
+  }
 
-  const jwtMock = {
-    sign: jest.fn().mockReturnValue("jwt_token"),
-  } as unknown as JwtService
+  const jwtMock: any = {
+    signAsync: jest.fn().mockResolvedValue("jwt_token"),
+  }
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -38,18 +37,18 @@ describe("AuthService", () => {
       telegramUser: { id: 123, first_name: "A", last_name: "B" },
     })
 
-    prismaMock.user.findUnique = jest.fn().mockResolvedValue({
+    prismaMock.users.findUnique.mockResolvedValue({
       id: "u1",
       role: ROLES.USER,
-      fullName: "A B",
-      telegramId: BigInt(123),
+      telegram_id: BigInt(123),
     })
 
     const res = await service.authenticateTelegram("initData")
 
-    expect(jwtMock.sign).toHaveBeenCalled()
-    expect(res.accessToken).toBe("jwt_token")
-    expect(res.user).toEqual({ id: "u1", role: ROLES.USER, fullName: "A B" })
+    expect(jwtMock.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: "u1", role: ROLES.USER, telegramId: 123 })
+    )
+    expect(res).toEqual({ accessToken: "jwt_token" })
   })
 
   it("authenticateTelegram: invalid signature -> 401", async () => {
@@ -58,8 +57,6 @@ describe("AuthService", () => {
       telegramUser: null,
     })
 
-    await expect(service.authenticateTelegram("bad")).rejects.toBeInstanceOf(
-      UnauthorizedException
-    )
+    await expect(service.authenticateTelegram("bad")).rejects.toBeInstanceOf(UnauthorizedException)
   })
 })

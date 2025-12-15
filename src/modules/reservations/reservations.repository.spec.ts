@@ -13,62 +13,76 @@ describe("ReservationsRepository", () => {
     jest.clearAllMocks()
   })
 
-  it("createActive: hall not found -> 404", async () => {
+  it("create: hall not found -> 404", async () => {
     prismaMock.$transaction.mockImplementation(async (fn: any) =>
       fn({
-        hall: { findUnique: jest.fn().mockResolvedValue(null) },
-        reservation: { findFirst: jest.fn(), create: jest.fn() },
+        halls: { findUnique: jest.fn().mockResolvedValue(null) },
+        tables: { findUnique: jest.fn() },
+        reservations: { findFirst: jest.fn(), create: jest.fn() },
       })
     )
 
-    await expect(repo.createActive("hall-id")).rejects.toBeInstanceOf(
-      NotFoundException
-    )
+    const dto: any = {
+      restaurantId: "rest-1",
+      hallId: "hall-1",
+      tableId: "table-1",
+      date: "2025-12-05",
+      timeFrom: "19:00",
+      timeTo: "21:00",
+      guestsCount: 2,
+    }
+
+    await expect(repo.create(dto, "user-1")).rejects.toBeInstanceOf(NotFoundException)
   })
 
-  it("createActive: existing active -> 409", async () => {
+  it("create: existing conflict -> 409", async () => {
     prismaMock.$transaction.mockImplementation(async (fn: any) =>
       fn({
-        hall: { findUnique: jest.fn().mockResolvedValue({ id: "h1" }) },
-        reservation: {
+        halls: { findUnique: jest.fn().mockResolvedValue({ id: "hall-1" }) },
+        tables: { findUnique: jest.fn().mockResolvedValue({ id: "table-1", hall_id: "hall-1" }) },
+        reservations: {
           findFirst: jest.fn().mockResolvedValue({ id: "r1" }),
           create: jest.fn(),
         },
       })
     )
 
-    await expect(repo.createActive("h1")).rejects.toBeInstanceOf(
-      ConflictException
-    )
+    const dto: any = {
+      restaurantId: "rest-1",
+      hallId: "hall-1",
+      tableId: "table-1",
+      date: "2025-12-05",
+      timeFrom: "19:00",
+      timeTo: "21:00",
+      guestsCount: 2,
+    }
+
+    await expect(repo.create(dto, "user-1")).rejects.toBeInstanceOf(ConflictException)
   })
 
   it("cancel: reservation not found -> 404", async () => {
     prismaMock.$transaction.mockImplementation(async (fn: any) =>
       fn({
-        reservation: {
+        reservations: {
           findUnique: jest.fn().mockResolvedValue(null),
           update: jest.fn(),
         },
       })
     )
 
-    await expect(repo.cancel("r1", "reason")).rejects.toBeInstanceOf(
-      NotFoundException
-    )
+    await expect(repo.cancel("r1", "reason")).rejects.toBeInstanceOf(NotFoundException)
   })
 
-  it("cancel: already canceled -> 409", async () => {
+  it("cancel: already cancelled -> 409", async () => {
     prismaMock.$transaction.mockImplementation(async (fn: any) =>
       fn({
-        reservation: {
-          findUnique: jest.fn().mockResolvedValue({ id: "r1", status: "canceled" }),
+        reservations: {
+          findUnique: jest.fn().mockResolvedValue({ id: "r1", status: "cancelled" }),
           update: jest.fn(),
         },
       })
     )
 
-    await expect(repo.cancel("r1", "reason")).rejects.toBeInstanceOf(
-      ConflictException
-    )
+    await expect(repo.cancel("r1", "reason")).rejects.toBeInstanceOf(ConflictException)
   })
 })

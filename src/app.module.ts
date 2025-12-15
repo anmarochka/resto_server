@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common"
 import { ConfigModule } from "@nestjs/config"
 import { AppLoggerModule } from "./common/logger/logger.module"
 import { PrismaModule } from "./modules/prisma/prisma.module"
+import { RedisModule } from "./modules/redis/redis.module"
 import { HealthModule } from "./modules/health/health.module"
 import { AuthModule } from "./modules/auth/auth.module"
 import { RestaurantsModule } from "./modules/restaurants/restaurants.module"
@@ -16,6 +17,7 @@ import { AnalyticsModule } from "./modules/analytics/analytics.module"
     ConfigModule.forRoot({ isGlobal: true }),
     AppLoggerModule,
     PrismaModule,
+    RedisModule,
     HealthModule,
     AuthModule,
     RestaurantsModule,

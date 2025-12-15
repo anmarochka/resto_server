@@ -1,11 +1,17 @@
 import { AnalyticsController } from "./analytics.controller"
 
 describe("AnalyticsController", () => {
-  it("summary delegates to service", async () => {
-    const svc: any = { getSummary: jest.fn().mockResolvedValue({ totalReservations: 1, cancelled: 0, active: 1 }) }
+  it("summary delegates to service with params", async () => {
+    const svc: any = { getSummary: jest.fn().mockResolvedValue({ ok: true }) }
     const c = new AnalyticsController(svc)
 
-    await expect(c.summary()).resolves.toEqual({ totalReservations: 1, cancelled: 0, active: 1 })
-    expect(svc.getSummary).toHaveBeenCalled()
+    await expect(
+      c.summary("00000000-0000-4000-8000-000000000000", "2025-12-05")
+    ).resolves.toEqual({ ok: true })
+
+    expect(svc.getSummary).toHaveBeenCalledWith(
+      "00000000-0000-4000-8000-000000000000",
+      "2025-12-05"
+    )
   })
 })

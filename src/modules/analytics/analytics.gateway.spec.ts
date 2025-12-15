@@ -26,4 +26,21 @@ describe("AnalyticsGateway", () => {
       payload: { id: "r1" },
     })
   })
+
+  it("emitToRestaurant emits into restaurant room", () => {
+    const jwtMock: any = {}
+    const prismaMock: any = {}
+
+    const g = new AnalyticsGateway(jwtMock, prismaMock)
+
+    const emit = jest.fn()
+    ;(g as any).server = {
+      to: jest.fn().mockReturnValue({ emit }),
+    }
+
+    g.emitToRestaurant("rest-1", "analytics:update", { x: 1 })
+
+    expect((g as any).server.to).toHaveBeenCalledWith("restaurant:rest-1")
+    expect(emit).toHaveBeenCalledWith("analytics:update", { x: 1 })
+  })
 })

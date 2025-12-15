@@ -1,27 +1,27 @@
 import { Test } from "@nestjs/testing"
 import { ReservationsService } from "./reservations.service"
 import { ReservationsRepository } from "./reservations.repository"
-import { AnalyticsGateway } from "../analytics/analytics.gateway"
+import { AnalyticsEventBus } from "../analytics/analytics.event-bus"
 
 describe("ReservationsService", () => {
   let service: ReservationsService
 
   const repoMock = {
-    createActive: jest.fn(),
+    create: jest.fn(),
     cancel: jest.fn(),
   } as unknown as ReservationsRepository
 
-  const gatewayMock = {
-    emitReservationCreated: jest.fn(),
-    emitReservationCancelled: jest.fn(),
-  } as unknown as AnalyticsGateway
+  const busMock = {
+    emit: jest.fn(),
+    on: jest.fn(),
+  } as unknown as AnalyticsEventBus
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         ReservationsService,
         { provide: ReservationsRepository, useValue: repoMock },
-        { provide: AnalyticsGateway, useValue: gatewayMock },
+        { provide: AnalyticsEventBus, useValue: busMock },
       ],
     }).compile()
 
@@ -29,26 +29,72 @@ describe("ReservationsService", () => {
     jest.clearAllMocks()
   })
 
-  it("createReservation: creates and emits reservation_created", async () => {
-    repoMock.createActive = jest.fn().mockResolvedValue({ id: "r1" })
+  it("createReservation: creates and emits reservation.created", async () => {
+    repoMock.create = jest.fn().mockResolvedValue({
+      id: "res-1",
+      restaurant_id: "rest-1",
+      hall_id: "hall-1",
+      table_id: "table-1",
+      guests_count: 4,
+      date: new Date("2025-12-05T00:00:00.000Z"),
+      time_from: new Date("1970-01-01T19:00:00.000Z"),
+      time_to: new Date("1970-01-01T21:00:00.000Z"),
+      status: "pending",
+    })
 
-    const res = await service.createReservation({ hallId: "h1" } as any)
+    const dto: any = {
+      restaurantId: "rest-1",
+      hallId: "hall-1",
+      tableId: "table-1",
+      date: "2025-12-05",
+      timeFrom: "19:00",
+      timeTo: "21:00",
+      guestsCount: 4,
+    }
 
-    expect(repoMock.createActive).toHaveBeenCalledWith("h1")
-    expect(gatewayMock.emitReservationCreated).toHaveBeenCalledWith({ id: "r1" })
-    expect(res).toEqual({ id: "r1" })
+    const res = await service.createReservation(dto, "user-1")
+
+    expect(repoMock.create).toHaveBeenCalledWith(dto, "user-1")
+    expect(busMock.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "reservation.created",
+        reservationId: "res-1",
+        restaurantId: "rest-1",
+        hallId: "hall-1",
+        tableId: "table-1",
+        guests: 4,
+        date: "2025-12-05",
+        timeFrom: "19:00",
+        timeTo: "21:00",
+      })
+    )
+    expect(res.id).toBe("res-1")
   })
 
-  it("cancelReservation: cancels and emits reservation_cancelled", async () => {
-    repoMock.cancel = jest.fn().mockResolvedValue({ id: "r1", status: "canceled" })
-
-    const res = await service.cancelReservation("r1", "reason")
-
-    expect(repoMock.cancel).toHaveBeenCalledWith("r1", "reason")
-    expect(gatewayMock.emitReservationCancelled).toHaveBeenCalledWith({
-      id: "r1",
-      status: "canceled",
+  it("cancelReservation: cancels and emits reservation.cancelled", async () => {
+    repoMock.cancel = jest.fn().mockResolvedValue({
+      id: "res-1",
+      restaurant_id: "rest-1",
+      hall_id: "hall-1",
+      table_id: "table-1",
+      guests_count: 2,
+      date: new Date("2025-12-05T00:00:00.000Z"),
+      time_from: new Date("1970-01-01T18:00:00.000Z"),
+      time_to: new Date("1970-01-01T20:00:00.000Z"),
+      status: "cancelled",
     })
-    expect(res.status).toBe("canceled")
+
+    const res = await service.cancelReservation("res-1", "reason")
+
+    expect(repoMock.cancel).toHaveBeenCalledWith("res-1", "reason")
+    expect(busMock.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "reservation.cancelled",
+        reservationId: "res-1",
+        restaurantId: "rest-1",
+        guests: 2,
+      })
+    )
+    expect(res.status).toBe("cancelled")
   })
 })

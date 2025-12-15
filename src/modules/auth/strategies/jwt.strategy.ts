@@ -5,9 +5,14 @@ import { ExtractJwt, Strategy } from "passport-jwt"
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
+    const secret = process.env.JWT_SECRET
+    if (process.env.NODE_ENV === "production" && !secret) {
+      throw new Error("JWT_SECRET is required in production")
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: process.env.JWT_SECRET ?? "dev_secret",
+      secretOrKey: secret ?? "dev_secret",
     })
   }
 

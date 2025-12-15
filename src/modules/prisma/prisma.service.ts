@@ -12,9 +12,18 @@ export class PrismaService
   private pool?: Pool
 
   constructor(config: ConfigService) {
+    const nodeEnv = config.get<string>("NODE_ENV") ?? process.env.NODE_ENV
+
+    if (nodeEnv === "test") {
+      const url = config.getOrThrow<string>("DATABASE_URL")
+      // тип PrismaClientOptions в сгенерированном клиенте не содержит datasources, кастуем
+      super({ datasources: { db: { url } } } as any)
+      return
+    }
+
     const accelerateUrl = config.get<string>("PRISMA_ACCELERATE_URL")
 
-    if (config.get<string>("NODE_ENV") === "production" && accelerateUrl) {
+    if (nodeEnv === "production" && accelerateUrl) {
       super({ accelerateUrl })
       return
     }
@@ -26,10 +35,12 @@ export class PrismaService
   }
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === "test") return
     await this.$connect()
   }
 
   async onModuleDestroy() {
+    if (process.env.NODE_ENV === "test") return
     await this.$disconnect()
     await this.pool?.end()
   }
