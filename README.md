@@ -60,3 +60,153 @@ The system provides:
 1. Copy environment template:
 ```bash
 cp .env.example .env
+
+
+Required variables:
+
+DATABASE_URL
+
+JWT_SECRET
+
+TELEGRAM_BOT_TOKEN
+
+REDIS_URL
+
+See .env.example for details.
+
+Running with Docker (Recommended)
+
+Starts PostgreSQL + Redis + API:
+
+docker compose up -d --build
+
+
+Logs:
+
+docker compose logs -f api
+
+
+Stop:
+
+docker compose down
+
+Check:
+
+Health: http://localhost:3000/health
+
+Swagger: http://localhost:3000/api/docs
+
+Local Development (without Docker)
+Install dependencies
+npm ci
+
+Generate Prisma client
+npm run prisma:generate
+
+Run application
+# development
+npm run start:dev
+
+# production
+npm run build
+npm run start:prod
+
+
+Server runs on http://localhost:3000.
+
+API Documentation (Swagger)
+
+Swagger UI:
+
+GET /api/docs
+
+
+Initialized in:
+
+src/main.ts
+
+Authentication
+
+Telegram WebApp authentication (initData)
+
+Signature verification via HMAC-SHA256
+
+JWT access tokens
+
+Role-based authorization (user, admin)
+
+Real-Time Analytics
+
+Redis for in-memory aggregation
+
+Event-driven analytics pipeline
+
+WebSocket namespace: /analytics
+
+Admin-only access
+
+Live updates:
+
+reservation events
+
+daily/hourly statistics
+
+hall popularity
+
+live event feed
+
+Server implementation:
+
+AnalyticsGateway
+
+AnalyticsProcessor
+
+AnalyticsSyncService
+
+Testing
+Unit tests
+npm run test
+
+Test coverage
+npm run test:cov
+
+E2E tests
+npm run test:e2e
+
+
+E2E tests use a minimal module to avoid external resource locks.
+
+Useful Endpoints
+
+GET /health — service health check
+
+POST /auth/telegram — Telegram login
+
+GET /restaurants — list restaurants
+
+GET /halls?restaurantId=...
+
+POST /reservations
+
+PATCH /reservations/:id/cancel
+
+GET /analytics/summary
+
+Deployment Notes
+
+Multi-stage Docker build
+
+Prisma client generated inside container
+
+Ready for cloud or VPS deployment
+
+Horizontal scaling requires Redis Pub/Sub (future improvement)
+
+License
+
+This project is licensed under the MIT License.
+
+Author
+
+Developed as part of an academic project
+Backend Architecture & Implementation — NestJS / PostgreSQL / Redis
