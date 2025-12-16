@@ -1,8 +1,10 @@
 <p align="center">
-  <a href="https://nestjs.com" target="_blank">
+  <a href="https://nestjs.com" target="_blank" rel="noopener noreferrer">
     <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="NestJS Logo" />
   </a>
 </p>
+
+<h1 align="center">Hanna API</h1>
 
 <p align="center">
   Backend API for a <strong>restaurant table booking system</strong> with
@@ -21,192 +23,203 @@
 
 ---
 
-## Description
+## Overview
 
-**Hanna API** is a backend service built with **NestJS** for a restaurant table booking platform.
+**Hanna API** is a NestJS backend for a restaurant table booking platform.
 
-The system provides:
-- REST API for a Telegram Mini App and admin panel
-- Authentication via **Telegram WebApp initData**
-- Role-based access control (user / admin)
-- Real-time analytics via **Redis + WebSockets**
+It provides:
+- REST API for Telegram Mini App + admin panel
+- Authentication via **Telegram WebApp `initData`** (HMAC verification) → **JWT**
+- Role-based authorization (**user / admin**)
+- **Real-time analytics** via **Redis + WebSocket (Socket.IO)**
 - Persistent storage in **PostgreSQL** using **Prisma ORM**
-- Fully containerized deployment with **Docker Compose**
+- Production-like local deployment with **Docker Compose**
 
 ---
 
-## Architecture Overview
+## Tech Stack
 
-- **NestJS** — modular backend architecture (controllers, services, repositories)
-- **PostgreSQL** — main data storage (restaurants, halls, tables, reservations)
-- **Prisma ORM** — type-safe database access
-- **Redis** — real-time metrics aggregation
-- **Socket.IO** — live analytics updates for admin dashboard
-- **Swagger (OpenAPI)** — API documentation
-- **Docker** — production-like local environment
+- **NestJS** (controllers / services / repositories, DI)
+- **PostgreSQL** (main storage)
+- **Prisma ORM** (type-safe DB access) — schema: [`prisma/schema.prisma`](prisma/schema.prisma)
+- **Redis** (in-memory aggregation for real-time analytics)
+- **Socket.IO** (WebSocket updates)
+- **Swagger/OpenAPI** (API docs)
+- **Docker / Docker Compose** (deployment)
 
 ---
 
-## Project Setup
+## Requirements
 
-### Requirements
+### For Docker (recommended)
+- Docker Desktop
+- Docker Compose
+
+### For local development
 - Node.js **22+**
-- Docker & Docker Compose (recommended)
+- npm **9+**
+- PostgreSQL + Redis (or run them via Docker)
 
 ---
 
-## Environment Configuration
+## Environment Variables
 
-1. Copy environment template:
+1) Copy the template:
 ```bash
 cp .env.example .env
+```
 
+2) Fill required variables (see `.env.example` for examples):
+- `DATABASE_URL`
+- `REDIS_URL`
+- `JWT_SECRET`
+- `TELEGRAM_BOT_TOKEN`
 
-Required variables:
+> Secrets must not be committed. Keep `.env` local.
 
-DATABASE_URL
+---
 
-JWT_SECRET
+## Run with Docker (Recommended)
 
-TELEGRAM_BOT_TOKEN
-
-REDIS_URL
-
-See .env.example for details.
-
-Running with Docker (Recommended)
-
-Starts PostgreSQL + Redis + API:
-
+Start PostgreSQL + Redis + API:
+```bash
 docker compose up -d --build
+```
 
-
-Logs:
-
+Follow logs:
+```bash
 docker compose logs -f api
-
+```
 
 Stop:
-
+```bash
 docker compose down
+```
 
-Check:
+### Verify
+- Health: `http://localhost:3000/health`
+- Swagger: `http://localhost:3000/api/docs`
 
-Health: http://localhost:3000/health
+---
 
-Swagger: http://localhost:3000/api/docs
+## Local Development (without Docker)
 
-Local Development (without Docker)
-Install dependencies
+Install dependencies:
+```bash
 npm ci
+```
 
-Generate Prisma client
+Generate Prisma client:
+```bash
 npm run prisma:generate
+```
 
-Run application
-# development
+Start in dev mode:
+```bash
 npm run start:dev
+```
 
-# production
+Build + start production:
+```bash
 npm run build
 npm run start:prod
+```
 
+Server runs on: `http://localhost:3000`
 
-Server runs on http://localhost:3000.
+---
 
-API Documentation (Swagger)
+## API Documentation (Swagger)
 
-Swagger UI:
-
-GET /api/docs
-
+Swagger UI is available at:
+- `http://localhost:3000/api/docs`
 
 Initialized in:
+- [`src/main.ts`](src/main.ts)
 
-src/main.ts
+---
 
-Authentication
+## Authentication
 
-Telegram WebApp authentication (initData)
+### Telegram WebApp login
+Endpoint:
+- `POST /auth/telegram`
 
-Signature verification via HMAC-SHA256
+What happens:
+- Server verifies Telegram WebApp `initData` signature via HMAC-SHA256
+- Issues a JWT access token
+- Token is used for protected endpoints and WebSocket connection
 
-JWT access tokens
+---
 
-Role-based authorization (user, admin)
+## Real-Time Analytics (Admin)
 
-Real-Time Analytics
+### WebSocket
+- Namespace: `/analytics`
+- Access: **admin only** + restaurant isolation by `restaurantId`
 
-Redis for in-memory aggregation
-
-Event-driven analytics pipeline
-
-WebSocket namespace: /analytics
-
-Admin-only access
-
-Live updates:
-
-reservation events
-
-daily/hourly statistics
-
-hall popularity
-
-live event feed
+Events (server → client):
+- `analytics:update`
+- `analytics:live_event`
+- `analytics:chart_update`
 
 Server implementation:
+- [`AnalyticsGateway`](src/modules/analytics/analytics.gateway.ts)
+- [`AnalyticsProcessor`](src/modules/analytics/analytics.processor.ts)
+- [`AnalyticsSyncService`](src/modules/analytics/analytics.sync.service.ts)
 
-AnalyticsGateway
+---
 
-AnalyticsProcessor
+## Testing
 
-AnalyticsSyncService
-
-Testing
-Unit tests
+Unit tests:
+```bash
 npm run test
+```
 
-Test coverage
+Test coverage:
+```bash
 npm run test:cov
+```
 
-E2E tests
+E2E tests:
+```bash
 npm run test:e2e
+```
 
+> E2E tests use a minimal module to avoid external resource locks.
 
-E2E tests use a minimal module to avoid external resource locks.
+---
 
-Useful Endpoints
+## Useful Endpoints
 
-GET /health — service health check
+- `GET /health` — health check
+- `POST /auth/telegram` — Telegram login
+- `GET /restaurants` — list restaurants
+- `GET /halls?restaurantId=...` — halls by restaurant
+- `POST /reservations` — create reservation
+- `PATCH /reservations/:id/cancel` — cancel reservation
+- `GET /analytics/summary?restaurantId=...&date=YYYY-MM-DD` — analytics summary
 
-POST /auth/telegram — Telegram login
+Full list is available in Swagger.
 
-GET /restaurants — list restaurants
+---
 
-GET /halls?restaurantId=...
+## Deployment Notes
 
-POST /reservations
+- Multi-stage Docker build
+- Prisma client is generated inside the container
+- Ready for VPS/cloud deployment
+- Horizontal scaling for the real-time pipeline can be upgraded by introducing Redis Pub/Sub/Streams (future improvement)
 
-PATCH /reservations/:id/cancel
+---
 
-GET /analytics/summary
+## License
 
-Deployment Notes
+MIT
 
-Multi-stage Docker build
+---
 
-Prisma client generated inside container
+## Author
 
-Ready for cloud or VPS deployment
-
-Horizontal scaling requires Redis Pub/Sub (future improvement)
-
-License
-
-This project is licensed under the MIT License.
-
-Author
-
-Developed as part of an academic project
-Backend Architecture & Implementation — NestJS / PostgreSQL / Redis
+Developed as part of an academic project (Backend: NestJS / PostgreSQL / Redis).
