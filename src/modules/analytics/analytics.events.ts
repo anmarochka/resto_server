@@ -16,4 +16,6 @@ export type ReservationAnalyticsEvent = {
   timeTo: string // HH:MM
   timestamp: string // ISO
   status?: "pending" | "confirmed" | "cancelled" | "completed"
+  oldStatus?: "pending" | "confirmed" | "cancelled" | "completed"
+  newStatus?: "pending" | "confirmed" | "cancelled" | "completed"
 }

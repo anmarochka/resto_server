@@ -11,6 +11,7 @@ import { UsersModule } from "./modules/users/users.module"
 import { ReservationsModule } from "./modules/reservations/reservations.module"
 import { AdminModule } from "./modules/admin/admin.module"
 import { AnalyticsModule } from "./modules/analytics/analytics.module"
+import { WsModule } from "./modules/ws/ws.module"
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AnalyticsModule } from "./modules/analytics/analytics.module"
     AppLoggerModule,
     PrismaModule,
     RedisModule,
+    WsModule,
     HealthModule,
     AuthModule,
     RestaurantsModule,

@@ -86,4 +86,21 @@ export class ReservationsRepository {
       })
     })
   }
+
+  listByUser(userId: string) {
+    return this.prisma.reservations.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+      include: { restaurants: true, halls: true, tables: true },
+    })
+  }
+
+  async findById(id: string) {
+    const reservation = await this.prisma.reservations.findUnique({
+      where: { id },
+      include: { restaurants: true, halls: true, tables: true },
+    })
+    if (!reservation) throw new NotFoundException("Reservation not found")
+    return reservation
+  }
 }
