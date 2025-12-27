@@ -95,7 +95,7 @@ export class ApiAdminBookingsService {
           time_from: timeFrom,
           time_to: timeTo,
           guests_count: dto.guestsCount,
-          status: "pending",
+          status: "confirmed",
         },
       })
 

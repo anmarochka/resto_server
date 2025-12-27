@@ -8,12 +8,14 @@ export class RestaurantsRepository {
   findAll() {
     return this.prisma.restaurants.findMany({
       where: { is_active: true },
+      include: { cuisines: true },
     })
   }
 
   async findById(id: string) {
     const restaurant = await this.prisma.restaurants.findFirst({
       where: { id, is_active: true },
+      include: { cuisines: true },
     })
     if (!restaurant) throw new NotFoundException("Restaurant not found")
     return restaurant

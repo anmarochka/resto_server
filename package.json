@@ -22,7 +22,8 @@
     "postinstall": "npm run prisma:generate",
     "pretest": "npm run prisma:generate",
     "pretest:cov": "npm run prisma:generate",
-    "pretest:e2e": "npm run prisma:generate"
+    "pretest:e2e": "npm run prisma:generate",
+    "dev:initdata": "ts-node scripts/generate-init-data.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

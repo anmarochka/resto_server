@@ -8,7 +8,7 @@ export class UsersRepository {
   async findById(id: string) {
     const user = await this.prisma.users.findUnique({
       where: { id },
-      select: { id: true, full_name: true, role: true, telegram_id: true },
+      select: { id: true, full_name: true, role: true, telegram_id: true, restaurant_id: true },
     })
     if (!user) return null
 
@@ -17,6 +17,7 @@ export class UsersRepository {
       fullName: user.full_name,
       role: user.role,
       telegramId: user.telegram_id ? user.telegram_id.toString() : null,
+      restaurantId: user.restaurant_id,
     }
   }
 }

@@ -40,7 +40,7 @@ export class ApiAdminAnalyticsController {
     @Req() req: any,
   ) {
     await this.assertAdminRestaurant(req.user.userId, restaurantId)
-    return this.analytics.getSummary(restaurantId, date ?? this.today())
+    return this.analytics.getSnapshot(restaurantId, date ?? this.today())
   }
 
   @Get(":restaurantId/realtime")
@@ -50,6 +50,6 @@ export class ApiAdminAnalyticsController {
     @Req() req: any,
   ) {
     await this.assertAdminRestaurant(req.user.userId, restaurantId)
-    return this.analytics.getSummary(restaurantId, date ?? this.today())
+    return this.analytics.getSnapshot(restaurantId, date ?? this.today())
   }
 }
