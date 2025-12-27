@@ -259,6 +259,12 @@ VALUES (
     'https://picsum.photos/400/300'
 );
 
+-- 3. USERS (admin for the restaurant + regular user)
+INSERT INTO users (id, telegram_id, full_name, phone, role, restaurant_id)
+VALUES
+('ccc33333-3333-3333-3333-333333333333', 123456789, 'Admin User', '+375000000000', 'admin', 'bbb22222-2222-2222-2222-222222222222'),
+('ccc33333-3333-3333-3333-444444444444', 987654321, 'User Test', '+375000000001', 'user', NULL);
+
 -- 3. USERS
 INSERT INTO users (id, telegram_id, full_name, phone, role)
 VALUES (
@@ -356,4 +362,3 @@ VALUES (
 );
 
 -- DONE
-

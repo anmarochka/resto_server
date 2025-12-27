@@ -6,20 +6,42 @@ import { RolesGuard } from "../../common/guards/roles.guard"
 import { Roles } from "../../common/decorators/roles.decorator"
 import { ROLES } from "../../common/constants/roles.constants"
 import { ParseUuidLoosePipe } from "../../common/pipes/parse-uuid-loose.pipe"
+import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator"
 
 class CreateZoneDto {
+  @IsString()
+  @IsNotEmpty()
   name: string
+
+  @IsString()
+  @IsNotEmpty()
   colorCode: string
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   sortOrder?: number
 }
 
 class UpdateZoneDto {
+  @IsOptional()
+  @IsString()
   name?: string
+
+  @IsOptional()
+  @IsString()
   colorCode?: string
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   sortOrder?: number
 }
 
 class ReorderZonesDto {
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
   zoneIds: string[]
 }
 
@@ -67,6 +89,23 @@ export class ApiAdminZonesController {
     })
   }
 
+  @Patch("reorder")
+  async reorder(
+    @Param("restaurantId", new ParseUuidLoosePipe()) restaurantId: string,
+    @Body() dto: ReorderZonesDto,
+    @Req() req: any,
+  ) {
+    await this.assertAdminRestaurant(req.user.userId, restaurantId)
+
+    await this.prisma.$transaction(
+      dto.zoneIds.map((id, idx) =>
+        this.prisma.halls.update({ where: { id }, data: { sort_order: idx } })
+      ),
+    )
+
+    return { ok: true }
+  }
+
   @Patch(":zoneId")
   async update(
     @Param("restaurantId", new ParseUuidLoosePipe()) restaurantId: string,
@@ -93,22 +132,5 @@ export class ApiAdminZonesController {
   ) {
     await this.assertAdminRestaurant(req.user.userId, restaurantId)
     return this.prisma.halls.delete({ where: { id: zoneId } })
-  }
-
-  @Patch("reorder")
-  async reorder(
-    @Param("restaurantId", new ParseUuidLoosePipe()) restaurantId: string,
-    @Body() dto: ReorderZonesDto,
-    @Req() req: any,
-  ) {
-    await this.assertAdminRestaurant(req.user.userId, restaurantId)
-
-    await this.prisma.$transaction(
-      dto.zoneIds.map((id, idx) =>
-        this.prisma.halls.update({ where: { id }, data: { sort_order: idx } })
-      ),
-    )
-
-    return { ok: true }
   }
 }

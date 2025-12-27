@@ -18,25 +18,64 @@ import { RolesGuard } from "../../common/guards/roles.guard"
 import { Roles } from "../../common/decorators/roles.decorator"
 import { ROLES } from "../../common/constants/roles.constants"
 import { ParseUuidLoosePipe } from "../../common/pipes/parse-uuid-loose.pipe"
+import { IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator"
 
 class CreateTableDto {
+  @IsString()
+  @IsNotEmpty()
   hallId: string
+
+  @IsInt()
+  @Min(1)
   tableNumber: number
+
+  @IsInt()
+  @Min(1)
   seats: number
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   positionIndex?: number
+
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean
 }
 
 class UpdateTableDto {
+  @IsOptional()
+  @IsString()
   hallId?: string
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
   tableNumber?: number
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
   seats?: number
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   positionIndex?: number
+
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean
 }
 
 class ReorderTablesDto {
+  @IsString()
+  @IsNotEmpty()
   hallId: string
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
   tableIds: string[]
 }
 
@@ -85,6 +124,36 @@ export class ApiAdminTablesController {
         is_active: dto.isActive ?? true,
       },
     })
+  }
+
+  @Patch("reorder")
+  async reorder(
+    @Param("restaurantId", new ParseUuidLoosePipe()) restaurantId: string,
+    @Body() dto: ReorderTablesDto,
+    @Req() req: any,
+  ) {
+    await this.assertAdminRestaurant(req.user.userId, restaurantId)
+
+    const hall = await this.prisma.halls.findUnique({ where: { id: dto.hallId } })
+    if (!hall) throw new NotFoundException("Hall not found")
+    if (hall.restaurant_id !== restaurantId) throw new ForbiddenException("Wrong restaurant")
+
+    const tables = await this.prisma.tables.findMany({
+      where: { id: { in: dto.tableIds }, hall_id: dto.hallId },
+      select: { id: true },
+    })
+
+    if (tables.length !== dto.tableIds.length) {
+      throw new BadRequestException("Some tables not found in hall")
+    }
+
+    await this.prisma.$transaction(
+      dto.tableIds.map((id, idx) =>
+        this.prisma.tables.update({ where: { id }, data: { position_index: idx } }),
+      ),
+    )
+
+    return { ok: true }
   }
 
   @Patch(":tableId")
@@ -144,35 +213,5 @@ export class ApiAdminTablesController {
       where: { id: tableId },
       data: { is_active: false },
     })
-  }
-
-  @Patch("reorder")
-  async reorder(
-    @Param("restaurantId", new ParseUuidLoosePipe()) restaurantId: string,
-    @Body() dto: ReorderTablesDto,
-    @Req() req: any,
-  ) {
-    await this.assertAdminRestaurant(req.user.userId, restaurantId)
-
-    const hall = await this.prisma.halls.findUnique({ where: { id: dto.hallId } })
-    if (!hall) throw new NotFoundException("Hall not found")
-    if (hall.restaurant_id !== restaurantId) throw new ForbiddenException("Wrong restaurant")
-
-    const tables = await this.prisma.tables.findMany({
-      where: { id: { in: dto.tableIds }, hall_id: dto.hallId },
-      select: { id: true },
-    })
-
-    if (tables.length !== dto.tableIds.length) {
-      throw new BadRequestException("Some tables not found in hall")
-    }
-
-    await this.prisma.$transaction(
-      dto.tableIds.map((id, idx) =>
-        this.prisma.tables.update({ where: { id }, data: { position_index: idx } }),
-      ),
-    )
-
-    return { ok: true }
   }
 }
