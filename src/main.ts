@@ -9,13 +9,26 @@ export async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
   app.enableShutdownHooks()
+  const localOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3002",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3002",
+  ]
+  const envOrigins = process.env.CORS_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+  const allowAll = process.env.CORS_ALLOW_ALL === "true"
+  const origins = envOrigins && envOrigins.length > 0 ? envOrigins : localOrigins
+
   app.enableCors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3002",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:3002",
-    ],
+    origin: allowAll
+      ? true
+      : (origin, callback) => {
+          if (!origin) return callback(null, true)
+          if (origins.includes(origin)) return callback(null, true)
+          return callback(new Error(`CORS blocked: ${origin}`), false)
+        },
     credentials: true,
   })
 
