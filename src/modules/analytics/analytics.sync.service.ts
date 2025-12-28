@@ -42,7 +42,7 @@ export class AnalyticsSyncService implements OnModuleInit, OnModuleDestroy {
       const dateObj = new Date(`${today}T00:00:00.000Z`)
 
       await this.prisma.analytics_daily.upsert({
-        where: { uq_analytics_daily_restaurant_date: { restaurant_id: restaurantId, date: dateObj } } as any,
+        where: { restaurant_id_date: { restaurant_id: restaurantId, date: dateObj } },
         update: {
           total_reservations: Number(day.total_reservations ?? 0),
           pending_reservations: Number(day.active_reservations ?? 0),
@@ -64,7 +64,7 @@ export class AnalyticsSyncService implements OnModuleInit, OnModuleDestroy {
         const guests_count = Number(hourly[`guests:${h}`] ?? 0)
 
         await this.prisma.analytics_hourly.upsert({
-          where: { uq_analytics_hourly_restaurant_date_hour: { restaurant_id: restaurantId, date: dateObj, hour: h } } as any,
+          where: { restaurant_id_date_hour: { restaurant_id: restaurantId, date: dateObj, hour: h } },
           update: { reservations_count, guests_count },
           create: { restaurant_id: restaurantId, date: dateObj, hour: h, reservations_count, guests_count },
         })
