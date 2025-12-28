@@ -27,12 +27,24 @@ export class AuthService {
 
     const telegramId = BigInt(telegramUser.id)
 
-    const existing = await this.prisma.users.findUnique({
+    let existing = await this.prisma.users.findUnique({
       where: { telegram_id: telegramId },
     })
 
     if (!existing) {
-      throw new UnauthorizedException("User not registered")
+      const fullName = [telegramUser.first_name, telegramUser.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim()
+      const safeName = fullName || telegramUser.username || "Telegram User"
+      existing = await this.prisma.users.create({
+        data: {
+          telegram_id: telegramId,
+          full_name: safeName,
+          phone: `tg_${telegramUser.id}`,
+          role: ROLES.USER,
+        },
+      })
     }
 
     const payload = {
