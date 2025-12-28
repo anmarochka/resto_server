@@ -61,7 +61,10 @@ export class AuthService {
       .map(([k, v]) => `${k}=${v}`)
       .join("\n")
 
-    const secretKey = crypto.createHash("sha256").update(botToken).digest()
+    const secretKey = crypto
+      .createHmac("sha256", "WebAppData")
+      .update(botToken)
+      .digest()
     const computedHash = crypto
       .createHmac("sha256", secretKey)
       .update(dataCheckString)
